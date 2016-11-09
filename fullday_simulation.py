@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 
-from lifxlan import *; import sys; import time; import math
+from lifxlan import *;
+import sys
+import time
+import math
+
+'''
+This script simulates an entire 24 hours worth of lighting effects,
+changing the lightbulb from warm to cool to warm. 
+'''
 
 lifxlan = LifxLAN()
 
-for x in range(0, 25):
-    hour = x; 
+for x in range(25):
+    hour = x;
     minute =0;
     second =0;
     print"Military Time: ",hour, ":00"
@@ -45,7 +53,7 @@ for x in range(0, 25):
         kelvin=2500;
 
     elif rise2set==True:
-        if (hour < midDayTime[0]): 
+        if (hour < midDayTime[0]):
             numMinutes = (midDayInMinutes) - (sunRiseTime[0]*60+sunRiseTime[1]);
             kelvinStep = kelvinRange/numMinutes #kelvinins per minute
             kelvin = math.ceil(((hour*60+minute) - (sunRiseTime[0]*60+sunRiseTime[1]))*kelvinStep +2500);
@@ -65,4 +73,3 @@ for x in range(0, 25):
 
     # Delay
     time.sleep(0.5)
-   
