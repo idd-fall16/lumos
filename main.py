@@ -20,6 +20,7 @@ while True:
 
         noise_state = GPIO.input(27)
         bulb_state = GPIO.input(17)
+        projector_state = GPIO.input(22)
         if noise_state == 0:
             os.system('mpg123 -q slowly-raining-loop.mp3 &')
         if bulb_state == 0: # switch is default 1
