@@ -12,8 +12,9 @@ and for connecting it to all modules (projector, bulb, sound).
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 #ser = serial.Serial('/dev/ttyACM0', 9600) # for reading serial from redbear duo
-
+projector_on = 0
 while True:
     try:
 
@@ -22,9 +23,18 @@ while True:
         if noise_state == 0:
             os.system('mpg123 -q slowly-raining-loop.mp3 &')
         if bulb_state == 0: # switch is default 1
+            #os.system('mpg123 -q slowly-raining-loop.mp3 &')
+            print("light simulation")
             os.system('python ~/Desktop/fullday_simulation.py &')
-        time.sleep(0.05)
+        if projector_state == 0:
+            print("pulling up webpage")
+            if projector_on
+                # turn off projector
+                projector_on = 0
+            else
+                projector_on = 1
 
+        time.sleep(0.05)
         '''
         if ((not prev_input) and input):
             print("button pressed")
