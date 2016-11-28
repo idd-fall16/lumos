@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Serena // Text Entry</title>
+    <link href='http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,700,200italic' rel='stylesheet' type='text/css'>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+    <script src="http://code.jquery.com/color/jquery.color-2.1.2.min.js"></script>
+    <!-- <script type="text/javascript" src="jquery.onepage-scroll.js"></script> -->
+    <link rel="stylesheet" type="text/css" href="flex.css">
+</head>
+
+<body>
+    <div class="page-container">
+        <div class="flex-container">
+            <div class="flex-item cell-a">a</div>
+            <div class="flex-item cell-b">b</div>
+            <div class="flex-item cell-c">c</div>
+            <div class="flex-item cell-d">d</div>
+            <div class="flex-item cell-e">e</div>
+            <div class="flex-item cell-f">f</div>
+            <div class="flex-item cell-g">g</div>
+            <div class="flex-item cell-h">h</div>
+            <div class="flex-item cell-i">i</div>
+            <div class="flex-item cell-j">j</div>
+            <div class="flex-item cell-k">k</div>
+            <div class="flex-item cell-l">l</div>
+            <div class="flex-item cell-m">m</div>
+            <div class="flex-item cell-n">n</div>
+            <div class="flex-item cell-o">o</div>
+            <div class="flex-item cell-p">p</div>
+            <div class="flex-item cell-q">q</div>
+            <div class="flex-item cell-r">r</div>
+            <div class="flex-item cell-s">s</div>
+            <div class="flex-item cell-t">t</div>
+            <div class="flex-item cell-u">u</div>
+            <div class="flex-item cell-v">v</div>
+            <div class="flex-item cell-w">w</div>
+            <div class="flex-item cell-x">x</div>
+            <div class="flex-item cell-y">y</div>
+            <div class="flex-item cell-z">z</div>
+            <div class="flex-item cell-_">_</div>
+        </div>
+        <div class="word-title">Text is:
+            <div class="word">&hellip;</div>
+        </div>
+
+        <!-- <div id="TESTOUTPUT"></div> -->
+    </div>
+
+    <script type="text/javascript">
+        setInterval(() => {
+            $.getJSON('/get', (data) => {
+                onNewData(data);
+                // $("#TESTOUTPUT").text(JSON.stringify(data));
+                // console.log(data);
+            })
+        }, 300);
+
+        function onNewData(data) {
+            var word = data[0];
+            var letterColors = data[1];
+            for (letter in letterColors) {
+                var color = letterColors[letter];
+                if (letter == ' ') letter = '_';
+
+                if ($(`.cell-${letter}`).is(`.appearance-${color}`)) continue;
+                $(`.cell-${letter}`)
+                    .removeClass('appearance-0')
+                    .removeClass('appearance-1')
+                    .removeClass('appearance-2')
+                    .removeClass('appearance-3')
+                    .addClass(`appearance-${color}`)
+            };
+
+            var oldWord = $('.word').text();
+            if (oldWord != word) {
+                $('.word')
+                    .text(word)
+                    // .animate({ "opacity": "0"}, 1500);
+                    // .fadeOut()
+                    .stop()
+                    .css("background-color", "#f4ebd9")
+                    .animate({ "background-color": "transparent"}, 300, () => {
+                    $('.word')
+                        .css("background-color", "#f4ebd9")
+                        .animate({ "background-color": "transparent"}, 700);
+                    })
+                ;
+            }
+        };
+    </script>
+</body>
+
+</html>
