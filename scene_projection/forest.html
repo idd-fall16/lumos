@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <title>Forest</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  
+      <link rel="stylesheet" href="css/style1.css">
+
+  <script async src="https://www.youtube.com/iframe_api"></script>
+  
+</head>
+
+<body>
+  <div class="video-background">
+    <div class="video-foreground">
+    <div id="muteYouTubeVideoPlayer">
+<!--       <iframe src="https://www.youtube.com/embed/SynzKC4fWp0?controls=0&showinfo=0&rel=0&autoplay=1&loop=1&playlist=SynzKC4fWp0" frameborder="0" allowfullscreen volume="0"></iframe>
+ -->
+      <iframe src="https://www.youtube.com/embed/8myYyMg1fFE?controls=0&showinfo=0&rel=0&autoplay=1&loop=1&playlist=8myYyMg1fFE" frameborder="0" allowfullscreen volume="0"></iframe>
+      </div>
+    </div>
+  </div>
+
+<!-- <div id="vidtop-content">
+<div class="vid-info">
+	  <h1>Rain</h1>
+  </div>
+</div>
+ -->  
+  
+<script>
+ function onYouTubeIframeAPIReady() {
+  var player;
+  player = new YT.Player('muteYouTubeVideoPlayer', {
+    videoId: '8myYyMg1fFE', // YouTube Video ID
+    // width: 560,               // Player width (in px)
+    // height: 316,              // Player height (in px)
+    playerVars: {
+      autoplay: 1,        // Auto-play the video on load
+      controls: 0,        // Show pause/play buttons in player
+      showinfo: 0,        // Hide the video title
+      modestbranding: 1,  // Hide the Youtube Logo
+      loop: 1,            // Run the video in a loop
+      fs: 0,              // Hide the full screen button
+      cc_load_policy: 0, // Hide closed captions
+      iv_load_policy: 3,  // Hide the Video Annotations
+      autohide: 0         // Hide video controls when playing
+    },
+    events: {
+      onReady: function(e) {
+        e.target.mute();
+      }
+    }
+  });
+ }
+ 
+ // Written by @labnol 
+</script>
+</body>
+</html>
