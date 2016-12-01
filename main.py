@@ -76,8 +76,8 @@ saturation = 65535
 
 # url information
 send_love_url = 'https://lumoslight.000webhostapp.com/orig/slideshow.php'
-sound_dict = {0:'light_rain.mp3', 1:'forest_loop.mp3', 2:'creek.mp3', 3:'hearth.mp3', 4:'brown_noise_short.mp3'}
-visual_dict = {0:'hello_cascade.h264', 1:'hello_cascade.h264', 2:'hello_cascade.h264', 3:'hello_hearth.h264', 4:'hello_hearth.h264'}
+sound_dict = {0:'light_rain.mp3', 1:'winter_solstice_night.mp3', 2:'diamond_peak_stream.mp3', 3:'hearth.mp3', 4:'brown_noise_short.mp3'}
+visual_dict = {0:'hello_rain.h264', 1:'winter_solstice.h264', 2:'hello_cascade.h264', 3:'hello_hearth.h264', 4:'brown_sky.h264'}
 
 # SET UP COMMANDS ==================================================================
 # start mpc
