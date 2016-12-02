@@ -1,5 +1,5 @@
 from lifxlan import*
-import sys, math, pyowm, datetime
+import sys, math, datetime
 import serial, string, os
 import RPi.GPIO as GPIO
 import time
@@ -8,35 +8,24 @@ import io
 import subprocess
 from subprocess import check_output
 from time import sleep
-from bulb_methods import *
+from methods import *
 '''
 This script is responsible for all immediate functionality of the controller
 and for connecting it to all modules (projector, bulb, sound).
+
+2 = on/off light
+3 = light toggle
+4 = projection next
+17 = projection toggle
+27 = projection back
 '''
 
-def getkey():
-	fd = sys.stdin.fileno()
-	old = termios.tcgetattr(fd)
-	new = termios.tcgetattr(fd)
-	new[3] = new[3] & ~TERMIOS.ICANON & ~TERMIOS.ECHO
-	new[6][TERMIOS.VMIN] = 1
-	new[6][TERMIOS.VTIME] = 0
-	termios.tcsetattr(fd, TERMIOS.TCSANOW, new)
-	c = None
-	try:
-		c = os.read(fd, 1)
-	finally:
-		termios.tcsetattr(fd, TERMIOS.TCSAFLUSH, old)
-	return c
-
-def get_pid():
-	return check_output(["pidof", "hello_video.bin"]).strip('\n')
-
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP) # on/off state of bulb
-GPIO.setup(22, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector toggle
-GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_UP) # goes directly to sendLove
+GPIO.setup(2, GPIO.IN, pull_up_down=GPIO.PUD_UP) # on/off state of bulb
+GPIO.setup(3, GPIO.IN, pull_up_down=GPIO.PUD_UP) # light toggle: 1 = manual, 0 = day/night
+GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector forward
+GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector/sendlove toggle: 1 = projector, 0 = sendLove
+GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector backward
 
 ser = serial.Serial('/dev/ttyACM0', 9600) # for reading serial from redbear duo
 
@@ -45,16 +34,13 @@ projector_toggle = 0 # 0 = rain, 1 = forest, 2 = creek, 3 = fire, 4 = brown nois
 send_love_on = 0
 num_env = 5
 
-# sound init
-mpdport = "6600"
-noise_tolerance = 2
-prev_noise = 100
-noise_m = 0.025
-noise_b = 1.25
-noise_max_converted = 100
+# values for bulb when it's first turned on
+default_c = 0
+default_s = 0
+default_b = 65535
+default_k = 9000
 
 # bulb init
-is_manual = 1
 color_tolerance = 500
 bulb_tolerance = 1000
 
@@ -71,8 +57,17 @@ kelvin_b = 2418.75
 kelvin_min_converted = 2500
 kelvin_max_converted = 9000
 kelvin_tolerance = 200 # no idea if this is correct
+man_kelvin = 2500
 
-saturation = 65535
+man_saturation = 65535
+
+# sound init
+mpdport = "6600"
+noise_tolerance = 2
+prev_noise = 100
+noise_m = 0.025
+noise_b = 1.25
+noise_max_converted = 100
 
 # url information
 send_love_url = 'https://lumoslight.000webhostapp.com/orig/slideshow.php'
@@ -84,137 +79,85 @@ visual_dict = {0:'hello_rain.h264', 1:'winter_solstice.h264', 2:'hello_cascade.h
 os.system('mpc update')
 os.system('mpc -p 6600')
 os.system('mpc repeat on')
-os.system('mpc add ' + sound_dict[projector_toggle])
 os.system('mpc play')
 os.system('mpc crossfade 10') # not sure how much difference this makes
 
-# open chromium
-# os.system('chromium-browser --kiosk ' + visual_dict[projector_toggle] + ' --incognito &') # alt+f4 to escape
+curr_pid = -1
+nightday_pid = -1
 
-# start video
-os.system('./hello_video.bin ' + visual_dict[projector_toggle] + ' &')
-curr_pid = get_pid()
+prev_env_mail_toggle = -1
+prev_bulb_onoff = -1
+prev_bulb_mode = -1
 
 # set up bulb
 lifxlan = LifxLAN()
-time.sleep(5)
+
 while True:
 	try:
-		# read from serial
 		msg = ser.readline()
-
-		noise_index = msg.find("N")
-		color_index= msg.find("C")
-		brightness_index = msg.find("B")
-		kelvin_index = msg.find("K")
-
-		noise_pot_value = msg[noise_index+1:]
-		color_pot_value = msg[color_index+1:brightness_index]
-		brightness_pot_value = msg[brightness_index+1:kelvin_index]
-		kelvin_pot_value = msg[kelvin_index+1:noise_index]
-
-		print("noise_pot_value = " + str(noise_pot_value))
-
-		# gpio info
-		bulb_on = True #TODO comment this out and use line below
-		# bulb_on = GPIO.input(27) # if this is 0 then set to true
-		bulb_state = GPIO.input(17)
-		projector_toggle_state = GPIO.input(22) # controls environment visuals
-		send_love_state = GPIO.input(23) # controls what the user sees
-		print("activate 24 hour simulation state = " + str(bulb_state))
-		print("projector_toggle_state = " + str(projector_toggle_state))
+		noise_pot, color_pot, brightness_pot, kelvin_pot = get_pot_values(msg)
 
 		# turn serial information into useful information
-		volume, prev_noise = convert_raw_bulb_info(noise_pot_value, prev_noise, noise_tolerance, noise_m, noise_b, noise_max_converted)
-		color, prev_color = convert_raw_bulb_info(color_pot_value, prev_color, color_tolerance, bulb_m, bulb_b, bulb_max_converted)
-		brightness, prev_brightness = convert_raw_bulb_info(brightness_pot_value, prev_brightness, bulb_tolerance, bulb_m, bulb_b, bulb_max_converted, bulb_on)
-		# kelvin, prev_kelvin = convert_raw_bulb_info(kelvin_pot_value, prev_kelvin, kelvin_tolerance, kelvin_m, kelvin_b, kelvin_max_converted, 1, kelvin_min_converted)
-		kelvin = 2500
+		volume, prev_noise = convert_raw_bulb_info(noise_pot, prev_noise, noise_tolerance, noise_m, noise_b, noise_max_converted)
+		color, prev_color = convert_raw_bulb_info(color_pot, prev_color, color_tolerance, bulb_m, bulb_b, bulb_max_converted)
+		brightness, prev_brightness = convert_raw_bulb_info(brightness_pot, prev_brightness, bulb_tolerance, bulb_m, bulb_b, bulb_max_converted, bulb_on)
 
-		print("volume = " + str(volume))
-		print("color = " + str(color))
-		print("brightness = " + str(brightness))
-
-		# respond to collected info
 		os.system('mpc volume ' + str(volume))
 
-		# Send updated parameter to LIFX Bulb
-		if is_manual and bulb_state:
-			bulb_settings = [color, saturation, brightness, kelvin];
-			lifxlan.set_color_all_lights(bulb_settings, rapid=True)
-		elif is_manual and bulb_state == 0:
-			# if bulb_state == 0: # switch is default 1
-			print("light simulation")
-			os.system('python ~/Desktop/automatic_full_day_simulation.py &')
-		# else:
-			# won't happen on monday
-			# for non-manual mode
+		# BUTTONS: assign button inputs to variables
+		bulb_onoff = GPIO.input(2) # 1 = on; 0 = off; HELD STATE TOGGLE
+		bulb_mode = GPIO.input(3) # 1 = manual, 0 = day/night; HELD STATE TOGGLE
+		projector_forward = GPIO.input(4)
+		projector_backward = GPIO.input(27)
+		env_mail_toggle = GPIO.input(17) # 1 = projection; 0 = mail; HELD STATE TOGGLE
 
-		if projector_toggle_state == 0:
-			if send_love_on == 1:
-				print("killing pid = " + str(curr_pid))
-				os.system('kill -9 ' + curr_pid + " &")
-				curr_pid = get_pid()
-				send_love_on = 0
+		# How each button causes the device to respond: ========================
+		# 1. If on/off has changed, deal with it
+		if prev_bulb_onoff == -1 or prev_bulb_onoff != bulb_onoff:
+			prev_bulb_onoff = bulb_onoff
+			if bulb_onoff:
+				bulb_on(lifxlan, default_c, default_s, default_b, default_k)
+			else:
+				bulb_off(lifxlan)
 
+		# 2. If env_mail_toggle has changed, deal with it
+		if (prev_env_mail_toggle == -1) or (prev_env_mail_toggle != env_mail_toggle):
+			prev_env_mail_toggle = env_mail_toggle
+			if env_mail_toggle == 0:
+				curr_pid = display_postcards(curr_pid, send_love_url)
+			else:
+				curr_pid = display_env(projector_toggle, visual_dict, sound_dict, curr_pid)
+
+		# 3. If bulb_mode has changed, deal with it
+		if prev_bulb_mode == -1 or prev_bulb_mode != bulb_mode:
+			prev_bulb_mode = bulb_mode
+			if bulb_mode: # manual
+				# TODO manual functionality
+				if nightday_pid != -1:
+					os.system('kill -9 ' + nightday_pid)
+					nightday_pid = -1
+				print("Manual mode is on")
+				bulb_on(lifxlan, color, man_saturation, brightness, man_kelvin)
+			else: # automatic day-night reflection
+				os.system('python fullday_simulation.py &')
+				# os.system('python automatic_full_day_simulation.py &')
+				# nightday_pid = check_output(["pidof", "automatic_full_day_simulation.py"]).strip('\n')
+				# print("fullday simulation pid = " + str(nightday_pid))
+
+		if bulb_mode and bulb_onoff:
+			bulb_on(lifxlan, color, man_saturation, brightness, man_kelvin)
+
+		# 4. Environment toggling (forward and backward)
+		if projector_forward == 0 and prev_env_mail_toggle:
 			projector_toggle += 1
 			projector_toggle = projector_toggle % num_env
+			curr_pid = display_env(projector_toggle, visual_dict, sound_dict, curr_pid)
 
-			# open up new video
-			os.system('./hello_video.bin ' + visual_dict[projector_toggle] + ' &')
-
-			print("killing pid = " + str(curr_pid))
-			os.system('kill -9 ' + curr_pid + " &")
-			curr_pid = get_pid()
-
-			# os.system('chromium-browser --kiosk ' + visual_dict[projector_toggle] + ' --incognito &') # alt+f4 to escape
-			# os.system('xdotool search --onlyvisible --class "chromium" windowfocus and xdotool type ' + visual_dict[projector_toggle] + ' and xdotool key Return')
-			os.system('mpc add ' + sound_dict[projector_toggle])
-			os.system('mpc next') # force next
-			os.system('mpc crop') # get rid of previous track
-
-		if send_love_state == 0:
-			print("send_love_state = " + str(send_love_state))
-			if send_love_on == 0:
-				print("opening send love")
-				os.system('chromium-browser --kiosk ' + send_love_url + ' &') # alt+f4 to escape
-				# os.system('@chromium --kiosk ' + send_love_url)
-				send_love_on = 1
-
-				# stop sound
-				os.system('mpc clear')
-
-				# kill video
-				print("turning on slideshow")
-				print("killing pid = " + str(curr_pid))
-				os.system('kill -9 ' + curr_pid + " &")
-
-				time.sleep(5)
-
-				# get pid of chrome process
-				pids = check_output(["pidof", "chromium-browse"]).strip('\n').split(' ')
-				curr_pid = pids[len(pids) - 1]
-				print("chrome pid = " + str(curr_pid))
-
-			else:
-				# os.system('chromium-browser --kiosk ' + visual_dict[projector_toggle] + ' &') # alt+f4 to escape
-				send_love_on = 0
-
-				# open up new video
-				# os.system('./hello_video.bin ' + visual_dict[projector_toggle] + ' &')
-
-				print("Turning off slideshow: killing pid = " + str(curr_pid))
-				os.system('kill -9 ' + curr_pid + " &")
-
-				os.system('./hello_video.bin ' + visual_dict[projector_toggle] + ' &')
-
-				curr_pid = get_pid()
-
-				# os.system('chromium-browser --kiosk ' + visual_dict[projector_toggle] + ' --incognito &') # alt+f4 to escape
-				# os.system('xdotool search --onlyvisible --class "chromium" windowfocus and xdotool type ' + visual_dict[projector_toggle] + ' and xdotool key Return')
-				os.system('mpc add ' + sound_dict[projector_toggle])
-				os.system('mpc play')
-				time.sleep(3)
+		if projector_backward == 0 and prev_env_mail_toggle:
+			projector_toggle -= 1
+			if projector_toggle == -1:
+				projector_toggle = num_env - 1
+			curr_pid = display_env(projector_toggle, visual_dict, sound_dict, curr_pid)
 
 		time.sleep(0.1)
 	except KeyboardInterrupt:

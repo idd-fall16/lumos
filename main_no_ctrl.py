@@ -12,6 +12,12 @@ from bulb_methods import *
 '''
 This script is responsible for all immediate functionality of the controller
 and for connecting it to all modules (projector, bulb, sound).
+
+2 = on/off light 
+3 = light toggle
+4 = projection next
+17 = projection toggle
+27 = projection back
 '''
 
 def getkey():
@@ -34,11 +40,11 @@ def get_pid():
 
 GPIO.setmode(GPIO.BCM)
 # GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP) # on/off state of bulb
-GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector toggle
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP) # goes directly to sendLove
-
-# ser = serial.Serial('/dev/ttyACM0', 9600) # for reading serial from redbear duo
+GPIO.setup(2, GPIO.IN, pull_up_down=GPIO.PUD_UP) # on/off state of bulb
+GPIO.setup(3, GPIO.IN, pull_up_down=GPIO.PUD_UP) # light toggle: 1 = manual, 0 = day/night
+GPIO.setup(4, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector forward
+GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector/sendlove toggle: 1 = projector, 0 = sendLove
+GPIO.setup(27, GPIO.IN, pull_up_down=GPIO.PUD_UP) # projector backward
 
 # environment init
 projector_toggle = 0 # 0 = rain, 1 = forest, 2 = creek, 3 = fire, 4 = brown noise
@@ -77,6 +83,8 @@ prev_send_love_state = -1
 time.sleep(5)
 while True:
 	try:
+		bulb_onoff = GPIO.input(2) # 1 = on; 0 = off
+		light_mode 
 		projector_toggle_state = GPIO.input(4) # controls environment visuals; officially 4
 		send_love_state = GPIO.input(17) # controls what the user sees; toggle switch (1 = projection; 0 = mail); officially 17
 		if prev_send_love_state == -1:
