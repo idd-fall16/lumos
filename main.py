@@ -43,7 +43,7 @@ ser = serial.Serial('/dev/ttyACM0', 9600) # for reading serial from redbear duo
 # environment init
 projector_toggle = 0 # 0 = rain, 1 = forest, 2 = creek, 3 = fire, 4 = brown noise
 send_love_on = 0
-num_env = 6
+num_env = 5
 
 # sound init
 mpdport = "6600"
@@ -151,9 +151,11 @@ while True:
 
 		if projector_toggle_state == 0:
 			if send_love_on == 1:
+				print("killing pid = " + str(curr_pid))
+				os.system('kill -9 ' + curr_pid + " &")
+				curr_pid = get_pid()
 				send_love_on = 0
 
-			time.sleep(3)
 			projector_toggle += 1
 			projector_toggle = projector_toggle % num_env
 
@@ -171,15 +173,47 @@ while True:
 			os.system('mpc crop') # get rid of previous track
 
 		if send_love_state == 0:
-			time.sleep(3)
+			print("send_love_state = " + str(send_love_state))
 			if send_love_on == 0:
 				print("opening send love")
 				os.system('chromium-browser --kiosk ' + send_love_url + ' &') # alt+f4 to escape
+				# os.system('@chromium --kiosk ' + send_love_url)
 				send_love_on = 1
+
+				# stop sound
+				os.system('mpc clear')
+
+				# kill video
+				print("turning on slideshow")
+				print("killing pid = " + str(curr_pid))
+				os.system('kill -9 ' + curr_pid + " &")
+
+				time.sleep(5)
+
+				# get pid of chrome process
+				pids = check_output(["pidof", "chromium-browse"]).strip('\n').split(' ')
+				curr_pid = pids[len(pids) - 1]
+				print("chrome pid = " + str(curr_pid))
+
 			else:
-				os.system('chromium-browser --kiosk ' + visual_dict[projector_toggle] + ' --incognito &') # alt+f4 to escape
+				# os.system('chromium-browser --kiosk ' + visual_dict[projector_toggle] + ' &') # alt+f4 to escape
 				send_love_on = 0
-			time.sleep(3)
+
+				# open up new video
+				# os.system('./hello_video.bin ' + visual_dict[projector_toggle] + ' &')
+
+				print("Turning off slideshow: killing pid = " + str(curr_pid))
+				os.system('kill -9 ' + curr_pid + " &")
+
+				os.system('./hello_video.bin ' + visual_dict[projector_toggle] + ' &')
+
+				curr_pid = get_pid()
+
+				# os.system('chromium-browser --kiosk ' + visual_dict[projector_toggle] + ' --incognito &') # alt+f4 to escape
+				# os.system('xdotool search --onlyvisible --class "chromium" windowfocus and xdotool type ' + visual_dict[projector_toggle] + ' and xdotool key Return')
+				os.system('mpc add ' + sound_dict[projector_toggle])
+				os.system('mpc play')
+				time.sleep(3)
 
 		time.sleep(0.1)
 	except KeyboardInterrupt:
