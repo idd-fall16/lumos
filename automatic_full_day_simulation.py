@@ -37,7 +37,9 @@ sunRiseTime=[int(risetime[0]+risetime[1]), int(risetime[3]+risetime[4]), int(ris
 #Manual Override
 print "sunRiseTime: ", sunRiseTime #!!
 print "sunSetTime: ", sunSetTime
-# cloudCover = 0 ;
+
+#!!
+cloudCover = 0 ;
 print "cloudCover: ", cloudCover
 # sunRiseTime = []; sunSetTime=[]; 
 
@@ -67,20 +69,21 @@ midDayInMinutes =(sunSetTime[0]*60+sunSetTime[1] + sunRiseTime[0]*60+sunSetTime[
 midDayTime=[math.floor(midDayInMinutes/60), midDayInMinutes%60, 0];
 
 
-while (True):
-    # hour = x; 
-    # minute =0;
-    # second =0;
-    # print"Military Time: ",hour, ":00"
+for x in range(0, 25):
+    #!
+    hour = x; 
+    minute =0;
+    second =0;
+    print"Military Time: ",hour, ":00" #!!
 
-    # Current Time
-    formattedLocalTime = time.asctime(time.localtime(time.time()))
-    localTime = time.localtime(time.time())
-    print "Local current time :", formattedLocalTime #!!
-    print "Local current time :", localTime [3], localTime[4], localTime[5]
-    hour = localTime [3];
-    minute = localTime [4];
-    second = localTime [5];
+    # # Current Time
+    # formattedLocalTime = time.asctime(time.localtime(time.time()))
+    # print "Local current time :", formattedLocalTime
+    # localTime = time.localtime(time.time())
+    # print "Local current time :", localTime [3], localTime[4], localTime[5]
+    # hour = localTime [3];
+    # minute = localTime [4];
+    # second = localTime [5];
 
     # Determine if Set2Rise or Rise2Set
     if ((hour >= sunSetTime[0] and hour <= 24) or (hour >= 0 and hour <= sunRiseTime[0])):
@@ -116,4 +119,4 @@ while (True):
     print "Bightness: ", brightness
 
     #!
-    time.sleep(60) #seconds
+    time.sleep(0.5) #seconds

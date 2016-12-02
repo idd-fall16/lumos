@@ -144,7 +144,7 @@ while True:
 		elif is_manual and bulb_state == 0:
 			# if bulb_state == 0: # switch is default 1
 			print("light simulation")
-			os.system('python ~/Desktop/fullday_simulation.py &')
+			os.system('python ~/Desktop/automatic_full_day_simulation.py &')
 		# else:
 			# won't happen on monday
 			# for non-manual mode
