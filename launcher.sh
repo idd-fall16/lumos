@@ -5,4 +5,4 @@ clear > /dev/tty1
 cd /
 cd home/pi/lumos
 # sudo python main.py 
-sudo python main_no_ctrl.py
+python main_no_ctrl.py

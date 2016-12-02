@@ -83,6 +83,7 @@ visual_dict = {0:'hello_rain.h264', 1:'winter_solstice.h264', 2:'hello_cascade.h
 # start mpc
 os.system('mpc update')
 os.system('mpc -p 6600')
+os.system('mpc repeat on')
 os.system('mpc add ' + sound_dict[projector_toggle])
 os.system('mpc play')
 os.system('mpc crossfade 10') # not sure how much difference this makes
