@@ -40,9 +40,16 @@ def display_postcards(curr_pid, send_love_url):
 	os.system('mpc clear')
 
 	# get pid of chrome process
-	pids = check_output(["pidof", "chromium-browse"]).strip('\n').split(' ')
-	curr_pid = pids[len(pids) - 1]
-	print("chrome pid = " + str(curr_pid))
+	not_ready = 1
+	while not_ready:
+		# try:
+		not_ready = 0
+		pids = check_output(["pidof", "chromium-browse"]).strip('\n').split(' ')
+		curr_pid = pids[len(pids) - 1]
+		print("chrome pid = " + str(curr_pid))
+		# except subprocess.CalledProcessError:
+		# 	not_ready = 1
+
 	return curr_pid
 
 def display_env(projector_toggle, visual_dict, sound_dict, curr_pid):
@@ -71,6 +78,7 @@ def bulb_on(lifxlan, c, s, b, k):
 
 def get_pot_values(msg):
 	print("msg = " + str(msg))
+	print("len(msg) = " + str(len(msg)))
 	noise_index = msg.find("N")
 	color_index= msg.find("C")
 	brightness_index = msg.find("B")

@@ -9,6 +9,8 @@ import subprocess
 from subprocess import check_output
 from time import sleep
 from methods import *
+import thread
+
 '''
 This script is responsible for all immediate functionality of the controller
 and for connecting it to all modules (projector, bulb, sound).
@@ -91,11 +93,17 @@ prev_bulb_mode = -1
 
 # set up bulb
 lifxlan = LifxLAN()
-
 while True:
 	try:
 		msg = ser.readline()
+		while len(str(msg)) == 1:
+			print("No information from redbear. Waiting.")
+			time.sleep(5)
 		noise_pot, color_pot, brightness_pot, kelvin_pot = get_pot_values(msg)
+		print("noise_pot = " + str(noise_pot))
+		print("color_pot = " + str(color_pot))
+		print("brightness_pot = " + str(brightness_pot))
+		print("kelvin_pot = " + str(kelvin_pot))
 
 		# turn serial information into useful information
 		volume, prev_noise = convert_raw_bulb_info(noise_pot, prev_noise, noise_tolerance, noise_m, noise_b, noise_max_converted)
