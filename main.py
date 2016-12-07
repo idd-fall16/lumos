@@ -101,16 +101,6 @@ day_night_pid = -1
 # set up bulb
 lifxlan = LifxLAN()
 while True:
-	if prev_env_mail_toggle:
-		for event in pygame.event.get():
-			if event.type == pygame.QUIT:
-				pygame.display.quit()
-				pygame.quit()
-				os.system('mpc clear')
-				os.system('mpc stop')
-				# print("killing pid = " + str(curr_pid))
-				os.system('kill -9 ' + curr_pid)
-				exit()
 	try:
 		msg = ser.readline()
 		while len(str(msg)) == 1:
@@ -179,8 +169,8 @@ while True:
 
 		time.sleep(0.1)
 	except KeyboardInterrupt:
-		pygame.display.quit()
-		pygame.quit()
+		# pygame.display.quit()
+		# pygame.quit()
 		os.system('mpc clear')
 		os.system('mpc stop')
 		# print("killing pid = " + str(curr_pid))

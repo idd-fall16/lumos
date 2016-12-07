@@ -59,12 +59,16 @@ def get_pid():
 # ENVIRONMENT RELATED METHODS ==================================================
 
 def display_postcards(curr_pid, send_love_url):
+	pygame.init()
+	pygame.mouse.set_visible(False)
+	screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+
 	if curr_pid != -1:
 		os.system('kill -9 ' + curr_pid + " &")
 
 	os.system('sudo -u pi chromium-browser --kiosk --incognito ' + send_love_url + ' &') # alt+f4 to escape
 
-	time.sleep(3) # give chrome some time to boot
+	time.sleep(2) # give chrome some time to boot
 
 	pygame.display.quit()
 	pygame.quit()
@@ -101,7 +105,8 @@ def display_env(projector_toggle, visual_dict, sound_dict, curr_pid):
 	os.system('mpc crop') # get rid of previous track
 
 	# lifxlan.set_color_all_lights(light_dict[projector_toggle], rapid=True)
-
+	pygame.display.quit()
+	pygame.quit()
 	return curr_pid
 
 # BULB RELATED METHODS ==================================================
