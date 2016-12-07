@@ -7,6 +7,36 @@ import io
 import subprocess
 from subprocess import check_output
 from time import sleep
+import pygame
+
+# values for bulb when it's first turned on
+default_c = 0
+default_s = 0
+default_b = 65535
+default_k = 9000
+
+# bulb init
+color_tolerance = 500
+bulb_tolerance = 1000
+
+prev_color = 0
+prev_brightness = 0
+prev_kelvin = 0
+
+bulb_m = 16.38375
+bulb_b = 819.1875
+bulb_max_converted = 65535
+
+kelvin_m = 1.625
+kelvin_b = 2418.75
+kelvin_min_converted = 2500
+kelvin_max_converted = 9000
+kelvin_tolerance = 200 # no idea if this is correct
+man_kelvin = 2500
+
+man_saturation = 65535
+
+# ====================================================================
 
 def getkey():
 	fd = sys.stdin.fileno()
@@ -32,9 +62,12 @@ def display_postcards(curr_pid, send_love_url):
 	if curr_pid != -1:
 		os.system('kill -9 ' + curr_pid + " &")
 
-	os.system('sudo -u pi chromium-browser --kiosk ' + send_love_url + ' &') # alt+f4 to escape
+	os.system('sudo -u pi chromium-browser --kiosk --incognito ' + send_love_url + ' &') # alt+f4 to escape
 
 	time.sleep(3) # give chrome some time to boot
+
+	pygame.display.quit()
+	pygame.quit()
 
 	# stop sound
 	os.system('mpc clear')
@@ -46,13 +79,14 @@ def display_postcards(curr_pid, send_love_url):
 		not_ready = 0
 		pids = check_output(["pidof", "chromium-browse"]).strip('\n').split(' ')
 		curr_pid = pids[len(pids) - 1]
-		print("chrome pid = " + str(curr_pid))
-		# except subprocess.CalledProcessError:
-		# 	not_ready = 1
 
 	return curr_pid
 
 def display_env(projector_toggle, visual_dict, sound_dict, curr_pid):
+	pygame.init()
+	pygame.mouse.set_visible(False)
+	screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+
 	# open up new video
 	os.system('./hello_video.bin ' + visual_dict[projector_toggle] + ' &')
 
@@ -65,6 +99,9 @@ def display_env(projector_toggle, visual_dict, sound_dict, curr_pid):
 	os.system('mpc play')
 	os.system('mpc next') # force next
 	os.system('mpc crop') # get rid of previous track
+
+	# lifxlan.set_color_all_lights(light_dict[projector_toggle], rapid=True)
+
 	return curr_pid
 
 # BULB RELATED METHODS ==================================================
@@ -77,8 +114,6 @@ def bulb_on(lifxlan, c, s, b, k):
 	lifxlan.set_color_all_lights(default, rapid=True)
 
 def get_pot_values(msg):
-	print("msg = " + str(msg))
-	print("len(msg) = " + str(len(msg)))
 	noise_index = msg.find("N")
 	color_index= msg.find("C")
 	brightness_index = msg.find("B")
@@ -92,17 +127,12 @@ def get_pot_values(msg):
 
 def convert_raw_bulb_info(val, prev, tolerance, m, b, max_converted, bulb_on = True, min_converted = 0):
 	# Mapping from raw pot values to color values
-
-	# print("val = " + str(val))
-	# print("prev = " + str(prev))
-
 	if val == None:
 		val = 0
 
 	val = float(val)
 	converted = m * val - b
 	converted = int(converted)
-	# print("initial converted = " + str(converted))
 
 	# Eliminating extra potentiometer range
 	if converted < 0:

@@ -10,6 +10,7 @@ from subprocess import check_output
 from time import sleep
 from methods import *
 import thread
+import pygame
 
 '''
 This script is responsible for all immediate functionality of the controller
@@ -21,6 +22,10 @@ and for connecting it to all modules (projector, bulb, sound).
 17 = projection toggle
 27 = projection back
 '''
+pygame.init()
+pygame.mouse.set_visible(False)
+screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
+lumos_pid = os.getpid()
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(2, GPIO.IN, pull_up_down=GPIO.PUD_UP) # on/off state of bulb
@@ -34,7 +39,7 @@ ser = serial.Serial('/dev/ttyACM0', 9600) # for reading serial from redbear duo
 # environment init
 projector_toggle = 0 # 0 = rain, 1 = forest, 2 = creek, 3 = fire, 4 = brown noise
 send_love_on = 0
-num_env = 5
+num_env = 4
 
 # values for bulb when it's first turned on
 default_c = 0
@@ -73,8 +78,9 @@ noise_max_converted = 100
 
 # url information
 send_love_url = 'https://lumoslight.000webhostapp.com/orig/slideshow.php'
-sound_dict = {0:'light_rain.mp3', 1:'winter_solstice_night.mp3', 2:'diamond_peak_stream.mp3', 3:'hearth.mp3', 4:'brown_noise_short.mp3'}
-visual_dict = {0:'hello_rain.h264', 1:'winter_solstice.h264', 2:'hello_cascade.h264', 3:'hello_hearth.h264', 4:'brown_sky.h264'}
+sound_dict = {0:'light_rain.mp3', 1:'winter_solstice_night.mp3', 2:'evening_lake.mp3', 3:'hearth.mp3'}
+visual_dict = {0:'hello_rain.h264', 1:'winter_solstice.h264', 2:'evening_lake.h264', 3:'hello_hearth.h264'}
+# light_dict = {0:[22755, 39321, 32767, 2500], 1:[39321, 9830, 32767, 2500], 2: [7827, 52428, 32767, 2500], 3: [31129, 39321, 32767, 2500], 4: [44964, 65535, 32767, 2500]}
 
 # SET UP COMMANDS ==================================================================
 # start mpc
@@ -90,20 +96,27 @@ nightday_pid = -1
 prev_env_mail_toggle = -1
 prev_bulb_onoff = -1
 prev_bulb_mode = -1
+day_night_pid = -1
 
 # set up bulb
 lifxlan = LifxLAN()
 while True:
+	if prev_env_mail_toggle:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.display.quit()
+				pygame.quit()
+				os.system('mpc clear')
+				os.system('mpc stop')
+				# print("killing pid = " + str(curr_pid))
+				os.system('kill -9 ' + curr_pid)
+				exit()
 	try:
 		msg = ser.readline()
 		while len(str(msg)) == 1:
-			print("No information from redbear. Waiting.")
+			# print("No information from redbear. Waiting.")
 			time.sleep(5)
 		noise_pot, color_pot, brightness_pot, kelvin_pot = get_pot_values(msg)
-		print("noise_pot = " + str(noise_pot))
-		print("color_pot = " + str(color_pot))
-		print("brightness_pot = " + str(brightness_pot))
-		print("kelvin_pot = " + str(kelvin_pot))
 
 		# turn serial information into useful information
 		volume, prev_noise = convert_raw_bulb_info(noise_pot, prev_noise, noise_tolerance, noise_m, noise_b, noise_max_converted)
@@ -140,17 +153,14 @@ while True:
 		if prev_bulb_mode == -1 or prev_bulb_mode != bulb_mode:
 			prev_bulb_mode = bulb_mode
 			if bulb_mode: # manual
-				# TODO manual functionality
-				if nightday_pid != -1:
+				if nightday_pid != -1 and nightday_pid != lumos_pid:
 					os.system('kill -9 ' + nightday_pid)
 					nightday_pid = -1
-				print("Manual mode is on")
 				bulb_on(lifxlan, color, man_saturation, brightness, man_kelvin)
 			else: # automatic day-night reflection
 				os.system('python fullday_simulation.py &')
-				# os.system('python automatic_full_day_simulation.py &')
-				# nightday_pid = check_output(["pidof", "automatic_full_day_simulation.py"]).strip('\n')
-				# print("fullday simulation pid = " + str(nightday_pid))
+				nightday_pid = check_output(["pidof", "python"]).strip('\n').split(' ')
+				nightday_pid = nightday_pid[0]
 
 		if bulb_mode and bulb_onoff:
 			bulb_on(lifxlan, color, man_saturation, brightness, man_kelvin)
@@ -169,8 +179,10 @@ while True:
 
 		time.sleep(0.1)
 	except KeyboardInterrupt:
+		pygame.display.quit()
+		pygame.quit()
 		os.system('mpc clear')
 		os.system('mpc stop')
-		print("killing pid = " + str(curr_pid))
+		# print("killing pid = " + str(curr_pid))
 		os.system('kill -9 ' + curr_pid)
 		exit()
